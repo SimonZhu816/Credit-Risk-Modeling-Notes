@@ -183,7 +183,35 @@ def scheduler(epoch,lr):
   if epoch % 10 == 0:
     return 1e-3/2
   return max(lr*0.8,1e-4)
-call 
-    
+callbacks = [
+  ModelCheckpoint("checkpoint.h5",monitor='val_loss',mode='min',save_best_only=True),
+  EarlyStopping(monitor="label_auc",patience=5,mode='max'),
+  LearningRateScheduler(scheduler,verbose=1),
+  ReduceLROnPlateau(monitor="val_loss",factor=0.8,patience=3,verbose=1,mode='min',min_lr=1e-6)
+]
+model.fit(
+  tfrecords_train,
+  epochs=30,
+  callbacks=callbacks,
+  validation_data = tfrecords_val,
+  max_queue_size=0,
+  steps_per_epoch = 405856 // batch_size,
+  validation_steps = 101043 // batch_size,
+  workers = 0,
+  use_multiprocessing = False,
+  verbose =2 ,
+  shuffle =False
+)
+model.save("baseline.h5")
+initializer = tf.keras.initializers.RandomNormal(mean=0,stddev=0.05,seed=2024)
+
+model.load_weights("baseline.h5")
+model.save("baseline.tf",save_format = 'tf')
+plot_model(model,show_shapes=True)
+
+model_save_path = os.getcwd() + "baseline.tf"
+!ls {model_save_path}
+!save_model_cli show --dir {model_save_path} --tag_set serve --signature_def serving_default
+
 
 # S3：评估单元
