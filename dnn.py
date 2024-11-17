@@ -62,10 +62,22 @@ select {feas_str}
   from feas_table_2
 
 # 存储tfrecords文件
+select uid,biz_date,train_test,label,label2,label_wgt,label2_wgt,f,f_nan,f_qcut
+  from feas_table_3
+where train_test = 'train'
+r.repartition(10).write.format("tfrecords").mode("overwrite").save("viewfs://hadoop/user/simon/train.tfrecords")
+!hadoop dfs -get viewfs://hadoop/user/simon/train.tfrecords dnn/train.tfrecords
 
+select uid,biz_date,train_test,label,label2,label_wgt,label2_wgt,f,f_nan,f_qcut
+  from feas_table_3
+where train_test = 'testA'
+r.repartition(10).write.format("tfrecords").mode("overwrite").save("viewfs://hadoop/user/simon/testA.tfrecords")
+!hadoop dfs -get viewfs://hadoop/user/simon/testA.tfrecords dnn/testA.tfrecords
 
-
-
+select uid,biz_date,train_test,label,label2,label_wgt,label2_wgt,f,f_nan,f_qcut
+  from feas_table_3
+r.repartition(10).write.format("tfrecords").mode("overwrite").save("viewfs://hadoop/user/simon/dataset.tfrecords")
+!hadoop dfs -get viewfs://hadoop/user/simon/dataset.tfrecords dnn/dataset.tfrecords
                                     
 # S2：训练单元
 feas = ['']
@@ -116,8 +128,8 @@ def tfrecords_reader_dataset(filename,repeat=True,n_readers=2,batch_size=1024,n_
   return dataset
 
 batch_size = 1024
-tfrecords_train = tfrecords_reader_dataset("train.tfrecords",batch_size=batch_size)
-tfrecords_val = tfrecords_reader_dataset("testA.tfrecords",batch_size=batch_size)
+tfrecords_train = tfrecords_reader_dataset("dnn/train.tfrecords",batch_size=batch_size)
+tfrecords_val = tfrecords_reader_dataset("dnn/testA.tfrecords",batch_size=batch_size)
 
 gc.collect()
 class AutoInt(Layer):
@@ -283,7 +295,7 @@ model_save_path = os.getcwd() + "baseline.tf"
 
 # S3：评估单元
 batch_size = 1024
-tfrecords_test = tfrecords_reader_dataset("dataset.tfrecords",repeat=False,batch_size=batch_size,is_test=True)
+tfrecords_test = tfrecords_reader_dataset("dnn/dataset.tfrecords",repeat=False,batch_size=batch_size,is_test=True)
 uid = []
 biz_date = []
 prob = []
