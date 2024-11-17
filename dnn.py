@@ -215,3 +215,27 @@ model_save_path = os.getcwd() + "baseline.tf"
 
 
 # S3：评估单元
+batch_size = 1024
+tfrecords_test = tfrecords_reader_dataset("dataset.tfrecords",repeat=False,batch_size=batch_size,is_test=True)
+uid = []
+biz_date = []
+prob = []
+prob2 = []
+for s in tqdm(tfrecords_test.__iter__()):
+  pred = model.predict(s[0])
+  prob += list(pred[0].reshape(-1))
+  prob2 += list(pred[1].reshape(-1))
+  uid += [str(a,encoding='utf-8') for a in s[1].numpy().reshape(-1)]
+  biz_date += [str(a,encoding='utf-8') for a in s[2].numpy().reshape(-1)]
+pred  = pd.DataFrame(
+    {
+      'uid':uid,
+      'biz_date':biz_date,
+      'prob':prob,
+      'prob2':prob2,
+    }
+  )
+
+pred.index = pred[['uid','biz_date']]
+pred = pred[['prob','prob2']]
+pred.to_pickle("res_dnn.pickle")
