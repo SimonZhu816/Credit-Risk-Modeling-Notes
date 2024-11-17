@@ -145,4 +145,36 @@ deep = layers.Dense(32,activation="relu")(deep)
 deep = layers.BatchNormalization(deep)
 deep = layers.Dense(16,activation="relu")(deep)
 
+x_autoint = WeightLayer()(keras.layers.Reshape([x.shape[-1],1])(x))
+x_autoint = AutoInt(dim=16,n_head=2,)(x_autoint)
+x_autoint = keras.layers.Reshape([x_autoint.shape[-1] * x_autoint.shape[-2]])(x_autoint)
+x_autoint = keras.layers.Dense(x.shape[-1],activation='relu',name=f'autoint_dense')(keras.layers.Dropout(0.2)(x_autoint))
+
+all_x = layers.concatenate([wide,x_autoint,deep])
+
+x = layers.Dropout(0.5)(all_x)
+x = layers.Dense(512,activation='relu')(x)
+x = layers.BatchNormalization(x)
+x = layers.Dropout(0.5)(x)
+x = layers.Dense(256,activation='relu')(x)
+x = layers.BatchNormalization(x)
+x = layers.Dropout(0.5)(x)
+label = layers.Dense(1,activation='sigmoid',name="label")(x)
+
+x = layers.Dropout(0.5)(all_x)
+x = layers.Dense(512,activation='relu')(x)
+x = layers.BatchNormalization(x)
+x = layers.Dropout(0.5)(x)
+x = layers.Dense(256,activation='relu')(x)
+x = layers.BatchNormalization(x)
+x = layers.Dropout(0.5)(x)
+label2 = layers.Dense(1,activation='sigmoid',name="label2")(x)
+
+model = tf.keras.Model(inputs=[ipt,ipt_nan,ipt_bin],outputs=[label,label2])
+model.compile(keras.optimizers.Adam(1e-3),
+              loss = ['binary_crossentropy' for _ in range(2)],
+              loss_weights = [1 for i in range(2],
+              metrics =[tf.keras.metrics.AUC(name='auc') for _ in range(2))
+def 
+
 # S3：评估单元
