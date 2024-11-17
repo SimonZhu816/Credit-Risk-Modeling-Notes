@@ -123,9 +123,26 @@ class WeightLayer(Layer):
                                   initializer = 'uniform',
                                   trainable = True)
     super(WeightLayer,self).__int__(**kwargs)
-
   def call(self,x):
     return tf.math.multiply(x,self.kernel)
   def compute_output_shape(self,input_shape):
     return (input_shape[0])
+    
+ipt = tf.keras.layers.Input(shape=(len(feas),))
+ipt_nan = tf.keras.layers.Input(shape=(len(feas),))
+ipt_bin = tf.keras.layers.Input(shape=(len(feas),))
+
+x1 = NoneLayer()(ipt)
+x2 = NoneLayer()(ipt_nan)
+x3 = NoneLayer()(ipt_bin)
+x = layers.concatenate([layers.add([x1,x2]),layers.add([x2,x3])])
+x = layers.BatchNormalization(x)
+wide = x
+
+deep = layers.Dense(64,activation="relu")(x)
+deep = layers.BatchNormalization(deep)
+deep = layers.Dense(32,activation="relu")(deep)
+deep = layers.BatchNormalization(deep)
+deep = layers.Dense(16,activation="relu")(deep)
+
 # S3：评估单元
