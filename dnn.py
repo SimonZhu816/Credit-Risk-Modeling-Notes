@@ -54,8 +54,8 @@ select {feas_str}
 
 feas_str = 'uid,biz_date,train_test,label,label2,label_wgt,label2_wgt'
 feas_str += ', split(f_str,"#DD#") as f'
-feas_str += ', split(f_nan_str,"#DD#") as f'
-feas_str += ', split(f_qcut_str,"#DD#") as f'
+feas_str += ', split(f_nan_str,"#DD#") as f_nan'
+feas_str += ', split(f_qcut_str,"#DD#") as f_qcut'
 # 特征宽表3
 create table feas_table_3 as 
 select {feas_str}
