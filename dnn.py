@@ -1,5 +1,72 @@
 # S1：数据准备
+feas = ['']
+feas_nan = [f+'_nan' for f in feas]
+feas_qcut = [f+'_qcut' for f in feas]
+feas_str = 'uid,biz_date'
+for f in feas:
+  feas_str += f',cast({f} as double) as {f}'
+data =spark.sql("selct {feas_str} from feas_table").toPandas()
+conf = {}
+for f in tqdm(feas):
+  data[f] = pd.to_numeric(data[f],errors='coerce',downcast = 'float')
+  bins,labels = pd.qcut(data[f],q=16,retbins=True,duplicates='drop')
+  data[f + '_qcut'] = pd.to_numeric(pd.cut(data[f],bins=labels,labels=list(range(len(labels)-1)),include_lowest=True),errors='coerce',downcast = 'float')
+  conf[f] = [data[f].mean(),data[f].std(),list(labels),data[f+'_qcut'].mean(),data[f+'_qcut'].std()]
 
+with open('conf.txt','wb') as f:
+  pickle.dump(conf,file=f)
+
+with open('conf.txt','rb') as f:
+  conf = pickle.load(f)
+
+f_str = ',concat('
+for f in feas:
+  f_str += f'if({f} if null or {round(float(conf[f][1]),4)} = 0,0, ({f} - {round(float(conf[f][0]),4)})/{round(float(conf[f][1]),4)}), "#DD#", '
+
+f_str = f_str[:-10] + ') as f_str'
+
+f_nan_str = ',concat('
+for f in feas:
+  f_nan_str += f'if({f} is null,1.0,0.0), "#DD#", '
+f_nan_str = f_nan_str[:-10] + ') as f_nan_str'
+
+f_nan_qcut = ',concat('
+for f in feas:
+  qcut = 'case'
+  for i in range(len(conf[f][2]) - 1):
+    if i == len(conf[f][2]) - 2:
+      qcut += f' when {f} >= {round(float(conf[f][2][i]),4) and {f}<= {round(float(conf[f][2][i+1]),4)} then {i}'
+    else:
+      qcut += f' when {f} >= {round(float(conf[f][2][i]),4) and {f}< {round(float(conf[f][2][i+1]),4)} then {i}'
+  qcut += f' else {round(float(conf[f][3]),4)} end'
+  f_qcut_str += f'if({f} is null or {round(float(conf[f][4]),4) = 0 or {f} < {round(float(conf[f][2][0]),4)} or {f}>{round(float(conf[2][-1]),4)},0,({qcut}-{round(float(conf[f][3]),4)}) / {round(float(conf[f][4]),4)}),"#DD#", '
+f_qcut_str = f_qcut_str[:-10] + ') as f_qcut_str'
+
+feas_str = 'uid,biz_date,label,label2,label_wgt,label2_wgt'
+feas_str += f_str
+feas_str += f_nan_str
+feas_str += f_nan_qcut
+
+# 特征宽表2
+create table feas_table_2 as 
+select {feas_str}
+  from feas_table
+
+feas_str = 'uid,biz_date,train_test,label,label2,label_wgt,label2_wgt'
+feas_str += ', split(f_str,"#DD#") as f'
+feas_str += ', split(f_nan_str,"#DD#") as f'
+feas_str += ', split(f_qcut_str,"#DD#") as f'
+# 特征宽表3
+create table feas_table_3 as 
+select {feas_str}
+  from feas_table_2
+
+# 存储tfrecords文件
+
+
+
+
+                                    
 # S2：训练单元
 feas = ['']
 feas_nan = [f+'_nan' for f in feas]
