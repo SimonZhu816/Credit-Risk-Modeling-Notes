@@ -175,6 +175,15 @@ model.compile(keras.optimizers.Adam(1e-3),
               loss = ['binary_crossentropy' for _ in range(2)],
               loss_weights = [1 for i in range(2],
               metrics =[tf.keras.metrics.AUC(name='auc') for _ in range(2))
-def 
+def scheduler(epoch,lr):
+  if epoch < 3:
+    return 1e-3
+  if epoch % 3 == 0:
+    return min(1e-3,1.2*lr)
+  if epoch % 10 == 0:
+    return 1e-3/2
+  return max(lr*0.8,1e-4)
+call 
+    
 
 # S3：评估单元
